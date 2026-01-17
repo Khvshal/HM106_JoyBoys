@@ -1,0 +1,317 @@
+Good, now we’re in **system-design + UX narration mode**, which is exactly what judges test mentally when you present.
+I’ll be **very explicit and sequential**, like a user walkthrough. No hand-waving.
+
+I’ll answer in **two parts**:
+
+1. **How news/articles enter your platform (your doubt)**
+2. **Exact UI flow: click-by-click, screen-by-screen**
+
+---
+
+# PART 1 — HOW DOES YOUR PLATFORM GET NEWS? (CLEAR THE CONFUSION)
+
+You are **NOT Reddit-only** and **NOT scraper-only**.
+
+👉 **You use a HYBRID INGESTION MODEL**
+This is important. It makes your platform feel alive and credible.
+
+## Your platform has TWO entry paths for articles:
+
+### 🔹 A. System-Aggregated Articles (Primary)
+
+* Backend periodically scrapes:
+
+  * Trusted RSS feeds (BBC, Reuters, etc.)
+* For each article:
+
+  * A post is auto-created in your system
+  * Initial credibility = neutral / under review
+* Users then:
+
+  * View
+  * Rate
+  * Comment
+  * Report
+
+This ensures:
+
+* Fresh content
+* No empty platform problem
+
+---
+
+### 🔹 B. User-Submitted Articles (Secondary)
+
+* User clicks **“Submit Article”**
+* Pastes URL
+* System:
+
+  * Extracts content
+  * Checks if article already exists
+  * If new → creates a post
+  * Marks as “User Submitted”
+
+This gives:
+
+* Community involvement
+* Coverage beyond your scraped sources
+
+🔴 **Important rule:**
+User-submitted ≠ trusted by default → starts at *Under Review*
+
+---
+
+### 🔑 Judge-friendly explanation (memorize this):
+
+> “Our platform combines automated aggregation for coverage and user submissions for diversity, while applying the same credibility pipeline to both.”
+
+That sentence alone is gold.
+
+---
+
+# PART 2 — UI / UX FLOW (CLICK-BY-CLICK, NO AMBIGUITY)
+
+I’ll walk through this as if I’m a **first-time user**.
+
+---
+
+## 🟦 1. LANDING PAGE (Unauthenticated)
+
+### What the user sees:
+
+* Top navbar:
+
+  * Logo
+  * Login / Sign Up
+* Main feed:
+
+  * List of news cards
+
+### Each news card shows:
+
+* Headline
+* Source name + source credibility badge
+* Credibility score (color-coded)
+* Credibility status badge (🟡🟢🔴)
+* “View Analysis” button
+
+📌 **User action:** clicks **“View Analysis”**
+
+---
+
+## 🟦 2. ARTICLE DETAIL PAGE (Core Screen)
+
+This is your **most important UI**.
+
+### Top section:
+
+* Article headline
+* Source info (clickable → source profile)
+* Overall credibility score
+* Status badge (e.g., Under Review)
+
+Buttons:
+
+* 👍 Rate Credibility
+* 🚩 Report Issue
+* 💬 View Comments
+
+---
+
+### 🟨 Credibility Breakdown Section
+
+Displayed immediately (no scrolling):
+
+* Pie chart showing:
+
+  * Source trust
+  * Community score
+  * NLP analysis
+  * Cross-source support
+* Tooltip on hover: explains each slice
+
+📌 **User clicks on a slice** → sees explanation text
+
+---
+
+### 🟨 Cross-Source Verification Section
+
+Below breakdown:
+
+* Text:
+
+  > “This claim is supported by 3 independent sources”
+* List:
+
+  * Source name
+  * Link
+  * Source credibility score
+
+📌 **User clicks a source** → opens that article in new tab
+
+---
+
+### 🟨 NLP Highlighted Article Body
+
+Article text shown with:
+
+* 🔴 Red highlights → emotional / sensational language
+* 🟢 Green highlights → factual statements
+
+Legend shown on side.
+
+📌 **User scrolls → visually understands bias**
+
+---
+
+## 🟦 3. USER INTERACTION FLOW
+
+### 🟩 Rating Flow
+
+User clicks **“Rate Credibility”**:
+
+Modal opens:
+
+* Slider (Low → High credibility)
+* Dropdown:
+
+  * Reason (poor sourcing, emotional tone, etc.)
+* Submit button
+
+System:
+
+* Applies weighted vote
+* Updates score (unless soft-locked)
+
+---
+
+### 🟩 Commenting Flow
+
+User clicks **“View Comments”**:
+
+* Comment list (sorted by user credibility)
+* “Add Comment” button
+
+Add Comment modal:
+
+* Reason tag (required)
+* Optional explanation
+
+This avoids garbage comments.
+
+---
+
+### 🟩 Reporting Flow
+
+User clicks **“Report Issue”**:
+
+Modal:
+
+* Select issue type
+* Optional note
+* Submit
+
+System:
+
+* Triggers review logic
+* Affects reporter credibility later
+
+---
+
+## 🟦 4. CREDIBILITY STATUS & LOCK UI
+
+If spam detected:
+
+Banner appears at top:
+
+> ⚠️ Credibility under verification due to unusual activity.
+
+Effects:
+
+* Score frozen
+* Rating disabled
+* Explanation visible
+
+This **builds trust**, not frustration.
+
+---
+
+## 🟦 5. USER PROFILE PAGE
+
+User clicks profile icon:
+
+### Shows:
+
+* Overall credibility level
+* Category-wise credibility (finance, geopolitics, etc.)
+* Voting history summary
+* Reports made vs upheld
+
+This discourages abuse.
+
+---
+
+## 🟦 6. SOURCE PROFILE PAGE
+
+Clicking a source name opens:
+
+* Source credibility score
+* Historical trend graph
+* Articles published
+* Report frequency
+
+Very few teams build this. Huge edge.
+
+---
+
+## 🟦 7. ADMIN DASHBOARD (Restricted)
+
+Admin sees:
+
+* Flagged articles
+* Suspicious users
+* Spike detection alerts
+
+Admin actions:
+
+* Soft lock / unlock article
+* Adjust source score
+* Override credibility (with justification)
+
+All actions logged.
+
+---
+
+# FINAL CLARITY (IMPORTANT)
+
+Your platform flow is:
+
+```
+News enters system
+→ Initial neutral credibility
+→ Users interact (weighted)
+→ AI analyzes language
+→ Cross-source verification runs
+→ Credibility evolves transparently
+```
+
+Not Reddit.
+Not Google News.
+A **credibility layer on top of news**.
+
+---
+
+## HARD TRUTH
+
+If you **demo this flow smoothly**, judges won’t question your backend depth — they’ll *assume it exists*.
+
+Bad UI kills good ideas.
+Clear UI **amplifies** average tech.
+
+If you want next, I can:
+
+* Turn this into a **UI wireframe outline**
+* Help you decide **which screens to build first**
+* Write a **demo narration script**
+
+Choose one.

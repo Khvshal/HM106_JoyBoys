@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+
+# ML artifacts
+*.pkl
+*.csv
+*.zip
+
+# Environment
+venv/
+.env

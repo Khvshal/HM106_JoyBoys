@@ -12,7 +12,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,3 +28,14 @@ class ArticleRequest(BaseModel):
 def analyze_news(request: ArticleRequest):
     result = analyze_article(request.article)
     return result
+
+# New RSS Feed Endpoint
+from backend.rss_service import fetch_rss_feeds
+
+@app.get("/feed")
+def get_news_feed():
+    try:
+        articles = fetch_rss_feeds()
+        return {"articles": articles, "count": len(articles)}
+    except Exception as e:
+        return {"error": str(e), "articles": []}

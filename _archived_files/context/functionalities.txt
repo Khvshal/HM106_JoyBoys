@@ -1,0 +1,634 @@
+
+
+# 🔹 1. User Authentication & Role-Based Access
+
+### What it does
+
+* Controls who can rate, comment, report, moderate.
+* Enables **trust weighting** and admin governance.
+
+### How to implement
+
+* JWT auth (email + password)
+* Roles stored in DB: `user`, `trusted_user`, `admin`
+* Promote to `trusted_user` automatically when credibility crosses threshold
+
+**DB tables**
+
+* `users(id, email, password_hash, role)`
+* `user_credibility(user_id, category, score)`
+
+### UI
+
+* Login / Signup page
+* Role badge on profile
+* Admin-only dashboard routes (protected)
+
+⛔ Don’t add OAuth unless time permits.
+
+---
+
+# 🔹 2. Hybrid Article Ingestion System
+
+### What it does
+
+* Ensures steady content flow.
+* Avoids platform being empty (huge judge issue).
+
+### How to implement
+
+**System ingestion**
+
+* RSS fetch every X minutes (cron / Celery)
+* Extract title, source, URL, publish date
+
+**User submission**
+
+* URL paste → fetch article text
+* Hash URL to detect duplicates
+
+**Initial state**
+
+* Credibility = neutral
+* Status = 🟡 Under Review
+
+### UI
+
+* “Submit Article” modal
+* Feed shows **Aggregated** vs **User-Submitted** badge
+
+⛔ Do NOT scrape aggressively. Judges don’t care.
+
+---  
+
+# 🔹 3. Source Metadata & Source Credibility Scoring
+
+### What it does
+
+* Prevents “10 garbage sites agree” problem.
+* Adds institutional memory.
+
+### How to implement
+
+* Each source has:
+
+  * Credibility score
+  * Report rate
+  * Corroboration rate
+
+Update source score when:
+
+* Article is later corroborated
+* Article marked high risk
+
+### UI
+
+* Source badge next to article
+* Click → source profile page
+* Trend graph (optional)
+
+---
+
+# 🔹 4. Multi-Factor Credibility Scoring Engine
+
+### What it does
+
+* Core logic of platform.
+* Produces **defensible** credibility.
+
+### How to implement
+
+Rule-based weighted sum (NOT deep ML):
+
+```
+score =
+  w1 * source_score +
+  w2 * community_score +
+  w3 * nlp_score +
+  w4 * corroboration_score -
+  w5 * spam_penalty
+```
+
+Weights configurable by admin.
+
+### UI
+
+* Shown as % or 0–100
+* Hover tooltip: “How this is calculated”
+
+⛔ Don’t tune weights endlessly. Explainability > accuracy.
+
+---
+
+# 🔹 5. Credibility Score Breakdown Visualization
+
+### What it does
+
+* Makes judges *trust* your AI.
+* Converts abstract logic into visuals.
+
+### How to implement
+
+* Store component scores separately
+* Render pie chart using Chart.js / Recharts
+
+### UI
+
+* Pie chart under score
+* Legend with plain-English labels
+
+---
+
+# 🔹 6. Credibility Status States
+
+### What it does
+
+* Prevents false certainty.
+* Handles breaking news responsibly.
+
+### How to implement
+
+Rule-based status assignment:
+
+* Low votes OR spike → 🟡 Under Review
+* ≥N corroborated sources → 🟢 Widely Corroborated
+* Conflicts / spam → 🔴 High Risk
+
+### UI
+
+* Large colored badge near title
+* Tooltip explaining state
+
+---
+
+# 🔹 7. Credibility Change Log (Audit Trail)
+
+### What it does
+
+* Proves transparency.
+* Massive SDG-16 alignment.
+
+### How to implement
+
+* Append-only `audit_log` table
+* Log reason strings on every change
+
+### UI
+
+* Timeline component
+* Expandable “Why score changed”
+
+---
+
+# 🔹 8. Soft Lock on Suspicious Articles
+
+### What it does
+
+* Stops manipulation *without censorship*.
+
+### How to implement
+
+Trigger when spam score > threshold:
+
+* Freeze score updates
+* Allow comments but down-weight votes
+
+### UI
+
+* Yellow banner:
+
+  > “Credibility under verification due to unusual activity”
+
+---
+
+# 🔹 9. Weighted User Opinions
+
+### What it does
+
+* Prevents mob rule.
+* Rewards consistent users.
+
+### How to implement
+
+Each vote weight:
+
+```
+vote_weight = base × user_credibility × category_score
+```
+
+Update user credibility when:
+
+* Vote aligns with later consensus
+* Report upheld
+
+### UI
+
+* User trust indicator (Low / Medium / High)
+
+---
+
+# 🔹 10. Category-Specific User Credibility
+
+### What it does
+
+* Stops fake “experts”.
+
+### How to implement
+
+* Separate scores per category
+* Article tagged with category
+
+### UI
+
+* Category badge on article
+* Credibility shown per category on profile
+
+---
+
+# 🔹 11. User Credibility Profile
+
+### What it does
+
+* Makes accountability visible.
+* Discourages spam.
+
+### How to implement
+
+Profile aggregates:
+
+* Credibility range
+* Reports upheld vs rejected
+* Categories of strength
+
+### UI
+
+* Profile page
+* Read-only for others
+
+---
+
+# 🔹 12. Structured Commenting System
+
+### What it does
+
+* Improves signal quality.
+* Simplifies moderation.
+
+### How to implement
+
+Dropdown reason + optional text.
+No free-text only comments.
+
+### UI
+
+* Reason selector
+* Tag visible on comment
+
+---
+
+# 🔹 13. Post & Comment Voting
+
+### What it does
+
+* Captures consensus.
+* Feeds credibility engine.
+
+### How to implement
+
+* One vote per user per item
+* Votes weighted (reuse logic)
+
+### UI
+
+* Up/down arrows
+* Vote impact tooltip
+
+---
+
+# 🔹 14. Misclassification Reporting System
+
+### What it does
+
+* Crowdsources correction.
+
+### How to implement
+
+Reports with reason codes.
+Admins accept/reject.
+
+### UI
+
+* “Report” button
+* Reason modal
+* Status feedback to reporter
+
+---
+
+# 🔹 15. Spam & Brigading Detection
+
+### What it does
+
+* Protects system integrity.
+
+### How to implement
+
+Rule-based scoring:
+
+* Same IP bursts
+* Time spikes
+* New-account voting
+* Extreme-only votes
+
+### UI
+
+* Invisible to users
+* Admin sees alerts
+
+---
+
+# 🔹 16. Spammer Flagging & Blocking
+
+### What it does
+
+* Enforces consequences.
+
+### How to implement
+
+* Flag score accumulates
+* Threshold → restrict actions
+
+### UI
+
+* Admin action buttons
+* Reason required
+
+---
+
+# 🔹 17. Admin Moderation Dashboard
+
+### What it does
+
+* Institutional control layer.
+
+### How to implement
+
+Tabs:
+
+* Articles
+* Users
+* Sources
+* Spam alerts
+
+### UI
+
+* Table views
+* Filters
+* Action modals
+
+---
+
+# 🔹 18. Admin Override with Justification
+
+### What it does
+
+* Balances automation with accountability.
+
+### How to implement
+
+Override requires text reason.
+Logged.
+
+### UI
+
+* Override modal
+* Reason visible in audit log
+
+---
+
+# 🔹 19. Cross-Source Claim Extraction
+
+### What it does
+
+* Enables corroboration.
+
+### How to implement
+
+Extract:
+
+* Headline
+* Named entities
+* Key sentences
+
+Simple NLP is enough.
+
+### UI
+
+* “Main claim” box
+
+---
+
+# 🔹 20. Independent Source Corroboration Check
+
+### What it does
+
+* Shows evidence, not popularity.
+
+### How to implement
+
+Match claims across stored articles.
+Count unique domains.
+
+### UI
+
+* “Supported by X sources”
+* Clickable links
+
+---
+
+# 🔹 21. Source-Level Corroboration Weighting
+
+### What it does
+
+* Stops low-quality echo chambers.
+
+### How to implement
+
+Multiply corroboration score by source credibility.
+
+### UI
+
+* Credibility badge next to each link
+
+---
+
+# 🔹 22. Sensational Language Detection
+
+### What it does
+
+* Makes AI visible.
+
+### How to implement
+
+Sentiment intensity + trigger words.
+
+### UI
+
+* 🔴 red highlights
+* Legend
+
+---
+
+# 🔹 23. Fact-Based Content Identification
+
+### What it does
+
+* Rewards evidence-driven writing.
+
+### How to implement
+
+Detect numbers, named entities.
+
+### UI
+
+* 🟢 green highlights
+
+---
+
+# 🔹 24. Fact vs Opinion Ratio Indicator
+
+### What it does
+
+* Single powerful metric judges remember.
+
+### How to implement
+
+Count factual vs opinion sentences.
+
+### UI
+
+* Progress bar or donut chart
+
+---
+
+# 🔹 25. Credibility-Focused Visual Language
+
+### What it does
+
+* Reduces cognitive load.
+
+### How to implement
+
+Consistent colors/icons across app.
+
+### UI
+
+* Style guide
+
+---
+
+# 🔹 26. Contextual Media Literacy Tooltips
+
+### What it does
+
+* Educates without lecturing.
+
+### How to implement
+
+Static explanations tied to UI elements.
+
+### UI
+
+* Info icons
+* Hover tooltips
+
+---
+
+# 🔹 27. Credibility Disclaimer & Ethics Notice
+
+### What it does
+
+* Protects credibility of your platform.
+
+### How to implement
+
+Static text component.
+
+### UI
+
+* Footer
+* Article header tooltip
+
+---
+
+# 🔹 28. Modular & Scalable Architecture
+
+### What it does
+
+* Shows engineering maturity.
+
+### How to implement
+
+Separate:
+
+* Frontend
+* Backend
+* NLP workers
+
+### UI
+
+* Architecture diagram (README)
+
+---
+
+# 🔹 29. Background Processing Pipeline
+
+### What it does
+
+* Keeps UI fast.
+
+### How to implement
+
+Async jobs for:
+
+* Scraping
+* NLP
+* Recalculation
+
+---
+
+# 🔹 30. Clean GitHub Workflow
+
+### What it does
+
+* Wins **20 points**.
+
+### How to implement
+
+Feature branches, PRs, reviews.
+
+---
+
+# 🔹 31. Documentation & Diagrams
+
+### What it does
+
+* Makes judges confident.
+
+### How to implement
+
+Clear README sections.
+
+---
+
+# 🔹 32. End-to-End Working Prototype
+
+### What it does
+
+* Proves you can execute.
+
+### How to implement
+
+Pick **one happy path** and make it flawless.
+
+---
+

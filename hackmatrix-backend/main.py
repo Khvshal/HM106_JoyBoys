@@ -86,8 +86,13 @@ app.add_middleware(
 
 # Health check
 @app.get("/api/health")
+@app.get("/api/health")
 def health():
     return {"status": "Backend running!", "service": "HackMatrix API"}
+
+@app.get("/")
+def root():
+    return {"message": "TruthLens API is Live! Check /api/health for status."}
 
 # Import routers
 from auth import router as auth_router

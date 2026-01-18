@@ -1,12 +1,35 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.production
+.DS_Store
+
 # Python
 __pycache__/
-*.pyc
-
-# ML artifacts
-*.pkl
-*.csv
-*.zip
-
-# Environment
+*.py[cod]
+*$py.class
 venv/
-.env
+.venv/
+hackmatrix.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Git
+.git/
+.lock-wscript
+.index.lock
+
+# Archived
+_archived_files/
+temp_integration/
+backend/
+frontend/
+hackmatrix-frontend/
+ml_credibility/

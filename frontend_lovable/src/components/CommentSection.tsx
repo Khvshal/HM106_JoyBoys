@@ -8,17 +8,35 @@ import { CredibilityScore } from './CredibilityScore';
 import { toast } from 'sonner';
 import { articlesAPI, commentsAPI } from '@/services/api';
 import { UserTrustBadge } from './UserTrustBadge';
+import { ReportModal } from './ReportModal';
 
 interface CommentSectionProps {
   articleId: number;
 }
 
+interface Comment {
+  id: number;
+  content?: string;
+  reason?: string;
+  explanation?: string;
+  created_at: string;
+  upvotes: number;
+  downvotes: number;
+  user_vote?: number; // 1, -1, 0
+  user?: {
+    username: string;
+    role: string;
+    credibility_score?: number;
+  };
+}
+
 export function CommentSection({ articleId }: CommentSectionProps) {
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [reportCommentId, setReportCommentId] = useState<number | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -38,12 +56,35 @@ export function CommentSection({ articleId }: CommentSectionProps) {
     }
 
     try {
+      const voteValue = type === 'up' ? 1 : -1;
+
       setComments(current => current.map(c => {
         if (c.id === commentId) {
+          const currentVote = c.user_vote || 0;
+          let newUpvotes = c.upvotes;
+          let newDownvotes = c.downvotes;
+          let newUserVote = currentVote;
+
+          if (currentVote === voteValue) {
+            // Toggle off
+            newUserVote = 0;
+            if (type === 'up') newUpvotes = Math.max(0, newUpvotes - 1);
+            else newDownvotes = Math.max(0, newDownvotes - 1);
+          } else {
+            // Change vote or New vote
+            newUserVote = voteValue;
+            if (currentVote === 1) newUpvotes = Math.max(0, newUpvotes - 1);
+            if (currentVote === -1) newDownvotes = Math.max(0, newDownvotes - 1);
+
+            if (type === 'up') newUpvotes += 1;
+            else newDownvotes += 1;
+          }
+
           return {
             ...c,
-            upvotes: type === 'up' ? (c.upvotes || 0) + 1 : (c.upvotes || 0),
-            downvotes: type === 'down' ? (c.downvotes || 0) + 1 : (c.downvotes || 0)
+            upvotes: newUpvotes,
+            downvotes: newDownvotes,
+            user_vote: newUserVote
           };
         }
         return c;
@@ -53,7 +94,7 @@ export function CommentSection({ articleId }: CommentSectionProps) {
     } catch (error) {
       console.error('Failed to vote', error);
       toast.error('Failed to register vote');
-      fetchComments();
+      fetchComments(); // Revert on error
     }
   };
 
@@ -193,21 +234,32 @@ export function CommentSection({ articleId }: CommentSectionProps) {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleVote(comment.id, 'up')}
-                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-green-600 hover:bg-green-50 rounded-full"
+                      className={`h-8 px-2.5 text-xs rounded-full ${comment.user_vote === 1
+                        ? 'text-green-600 bg-green-50'
+                        : 'text-muted-foreground hover:text-green-600 hover:bg-green-50'
+                        }`}
                     >
-                      <ThumbsUp className="h-3.5 w-3.5 mr-1.5" />
+                      <ThumbsUp className={`h-3.5 w-3.5 mr-1.5 ${comment.user_vote === 1 ? 'fill-current' : ''}`} />
                       {comment.upvotes || 0}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleVote(comment.id, 'down')}
-                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-full"
+                      className={`h-8 px-2.5 text-xs rounded-full ${comment.user_vote === -1
+                        ? 'text-red-600 bg-red-50'
+                        : 'text-muted-foreground hover:text-red-600 hover:bg-red-50'
+                        }`}
                     >
-                      <ThumbsDown className="h-3.5 w-3.5 mr-1.5" />
+                      <ThumbsDown className={`h-3.5 w-3.5 mr-1.5 ${comment.user_vote === -1 ? 'fill-current' : ''}`} />
                       {comment.downvotes || 0}
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground ml-auto rounded-full">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setReportCommentId(comment.id)}
+                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground ml-auto rounded-full"
+                    >
                       <Flag className="h-3.5 w-3.5 mr-1.5" />
                       Report
                     </Button>
@@ -218,6 +270,15 @@ export function CommentSection({ articleId }: CommentSectionProps) {
           ))
         )}
       </div>
+
+      {reportCommentId && (
+        <ReportModal
+          articleTitle=""
+          commentId={reportCommentId}
+          onClose={() => setReportCommentId(null)}
+        />
+      )}
     </div>
   );
 }
+

@@ -68,7 +68,7 @@ export const articlesAPI = {
     api.get(`/articles/${articleId}/ratings-breakdown`),
 
   report: (articleId: number, reason: string, explanation?: string) =>
-    api.post(`/articles/${articleId}/report`, { reason, explanation }),
+    api.post(`/articles/${articleId}/report`, { report_type: reason, description: explanation || '' }),
 };
 
 // Users endpoints
@@ -129,14 +129,18 @@ export const adminAPI = {
 };
 
 // RSS endpoints
+// RSS endpoints
 export const rssAPI = {
-  getFeed: () => api.get('/rss/'),
+  getFeed: () => api.get('/rss/feed'),
 };
 
 // Comments endpoints
 export const commentsAPI = {
   vote: (commentId: number, voteType: 'up' | 'down') =>
     api.post(`/comments/${commentId}/vote`, { vote_type: voteType }),
+
+  report: (commentId: number, reason: string, explanation?: string) =>
+    api.post(`/comments/${commentId}/report`, { report_type: reason, description: explanation || '' }),
 };
 
 export default api;

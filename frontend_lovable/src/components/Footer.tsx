@@ -41,16 +41,16 @@ export function Footer() {
                         <ul className="space-y-2 text-sm">
                             <li><Link to="/" className="text-muted-foreground hover:text-primary transition-colors">News Feed</Link></li>
                             <li><Link to="/profile" className="text-muted-foreground hover:text-primary transition-colors">My Profile</Link></li>
-                            <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">How It Works</a></li>
+                            <li><Link to="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">How It Works</Link></li>
                         </ul>
                     </div>
 
                     <div>
                         <h4 className="font-semibold mb-3">Transparency</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Scoring Methodology</a></li>
-                            <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Ethics & Guidelines</a></li>
-                            <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Audit Logs</a></li>
+                            <li><Link to="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">Scoring Methodology</Link></li>
+                            <li><Link to="/ethics" className="text-muted-foreground hover:text-primary transition-colors">Ethics & Guidelines</Link></li>
+                            <li><span className="text-muted-foreground/50 cursor-not-allowed">Audit Logs (API)</span></li>
                         </ul>
                     </div>
                 </div>

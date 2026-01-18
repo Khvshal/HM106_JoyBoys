@@ -1,78 +1,75 @@
 import feedparser
+import asyncio
+from typing import List, Dict
+from datetime import datetime
 import time
 
-RSS_FEEDS = {
-    "BBC News": {
-        "url": "https://feeds.bbci.co.uk/news/rss.xml",
-        "type": "International",
-        "color": "#b80000"
-    },
-    "The Hindu": {
-        "url": "https://www.thehindu.com/news/feeder/default.rss",
-        "type": "National",
-        "color": "#2c3e50"
-    },
-    "Economic Times": {
-        "url": "https://economictimes.indiatimes.com/rssfeedsdefault.cms", 
-        "type": "Business",
-        "color": "#e9d564"
-    },
-    "Reuters World": {
-        "url": "https://feeds.reuters.com/reuters/worldNews",
-        "type": "Wire Agency",
-        "color": "#ff8000"
-    }
-}
+# Trusted Sources
+FEEDS = [
+    {"name": "BBC News", "url": "https://feeds.bbci.co.uk/news/rss.xml", "category": "World"},
+    {"name": "Reuters", "url": "https://feeds.reuters.com/reuters/worldNews", "category": "World"},
+    {"name": "The Hindu", "url": "https://www.thehindu.com/news/feeder/default.rss", "category": "India"},
+    {"name": "The Economic Times", "url": "https://economictimes.indiatimes.com/rssfeedsdefault.cms", "category": "Business"},
+]
 
-def fetch_rss_feeds():
-    """
-    Fetches and merges articles from configured RSS feeds.
-    Returns a list of structured article dictionaries.
-    """
-    all_articles = []
-    
-    for source_name, config in RSS_FEEDS.items():
+def parse_date(entry):
+    if hasattr(entry, 'published_parsed'):
         try:
-            print(f"Fetching RSS feed from: {source_name}")
-            feed = feedparser.parse(config["url"])
+            return datetime.fromtimestamp(time.mktime(entry.published_parsed))
+        except:
+            pass
+    return datetime.utcnow()
+
+async def fetch_feed(feed_info: Dict) -> List[Dict]:
+    """Fetch and parse a single feed asynchronously"""
+    # feedparser is blocking, so run in executor
+    loop = asyncio.get_event_loop()
+    
+    def fetch():
+        return feedparser.parse(feed_info["url"])
+        
+    try:
+        feed = await loop.run_in_executor(None, fetch)
+        
+        items = []
+        for entry in feed.entries[:10]: # Limit to top 10 per feed
+            # Normalize fields
+            image_url = None
+            # Try to find image in media_content or links
+            if 'media_content' in entry:
+                 image_url = entry.media_content[0]['url']
+            elif 'links' in entry:
+                for link in entry.links:
+                    if link.get('type', '').startswith('image/'):
+                        image_url = link['href']
+                        break
             
-            # Process up to 5 entries per feed to keep it fast
-            for entry in feed.entries[:5]:
-                # Extract image if available (some RSS feeds include it in media_content or links)
-                image_url = None
-                if 'media_content' in entry:
-                    image_url = entry.media_content[0]['url']
-                elif 'media_thumbnail' in entry:
-                    image_url = entry.media_thumbnail[0]['url']
-                
-                article = {
-                    "id": entry.get("id", entry.get("link")),
-                    "headline": entry.get("title", "No Title"),
-                    "description": entry.get("summary", "No summary available.")[:200] + "...",
-                    "articleUrl": entry.get("link"),
-                    "source": source_name,
-                    "sourceColor": config["color"],
-                    "sourceType": config["type"],
-                    "timestamp": get_published_time(entry),
-                    "thumbnail": image_url,
-                    # Mock fields for frontend compatibility (will be updated if analyzed)
-                    "status": "pending", 
-                    "trustScore": 0,
-                    "likes": 0,
-                    "comments": 0
-                }
-                all_articles.append(article)
-                
-        except Exception as e:
-            print(f"Error fetching feed {source_name}: {e}")
-            continue
+            summary = getattr(entry, 'summary', '')
+            # Basic cleanup if summary contains HTML (simple tag stripping if needed, but keeping raw is often okay for now)
+            
+            items.append({
+                "title": entry.title,
+                "link": entry.link,
+                "summary": summary,
+                "published_at": parse_date(entry),
+                "source": feed_info["name"],
+                "category": feed_info["category"],
+                "image_url": image_url
+            })
+        return items
+    except Exception as e:
+        print(f"Error fetching {feed_info['name']}: {e}")
+        return []
 
-    # Sort checks by published time (simplistic sort for now)
-    return all_articles
-
-def get_published_time(entry):
-    if 'published' in entry:
-        return entry.published
-    elif 'updated' in entry:
-        return entry.updated
-    return "Just now"
+async def get_all_feeds() -> List[Dict]:
+    """Fetch all feeds and combine them"""
+    tasks = [fetch_feed(feed) for feed in FEEDS]
+    results = await asyncio.gather(*tasks)
+    
+    # Flatten list
+    all_items = [item for sublist in results for item in sublist]
+    
+    # Sort by date (newest first)
+    all_items.sort(key=lambda x: x['published_at'], reverse=True)
+    
+    return all_items

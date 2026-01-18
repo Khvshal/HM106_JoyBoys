@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { ArrowLeft, Star, LogOut, Shield, AlertTriangle, ExternalLink, MessageSquare, Flag } from 'lucide-react';
+import { ArrowLeft, Star, LogOut, Shield, AlertTriangle, ExternalLink, MessageSquare, Flag, Clock } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { CommentSection } from '@/components/CommentSection';
 import { VoteImpactIndicator } from '@/components/VoteImpactIndicator';
@@ -39,6 +39,11 @@ interface Article {
   suspicious_activity_detected: boolean;
   fact_opinion_ratio?: number;
   created_at: string;
+  user_has_rated?: boolean;
+  user_credibility_rating?: number;
+  audit_logs?: any[];
+  hype_sentences?: string[];
+  factual_sentences?: string[];
 }
 
 export default function ArticleDetail() {
@@ -49,7 +54,6 @@ export default function ArticleDetail() {
   const [rating, setRating] = useState<number>(50);
   const [user, setUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
@@ -59,6 +63,12 @@ export default function ArticleDetail() {
     }
     fetchArticle();
   }, [id]);
+
+  useEffect(() => {
+    if (article?.user_credibility_rating) {
+      setRating(article.user_credibility_rating);
+    }
+  }, [article]);
 
   const fetchArticle = async () => {
     try {
@@ -117,256 +127,176 @@ export default function ArticleDetail() {
   ];
 
   const getCredibilityColor = (score: number) => {
-    if (score >= 70) return 'text-emerald-600';
-    if (score >= 45) return 'text-amber-600';
-    return 'text-rose-600';
+    if (score >= 70) return 'text-emerald-700'; // Darker for readability
+    if (score >= 45) return 'text-amber-700';
+    return 'text-rose-700';
   };
 
+  const getCredibilityBg = (score: number) => {
+    if (score >= 70) return 'bg-emerald-50 border-emerald-200';
+    if (score >= 45) return 'bg-amber-50 border-amber-200';
+    return 'bg-rose-50 border-rose-200';
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50/50 font-sans text-foreground">
-      {/* Navbar - Simplified for Detail Page */}
-      <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="bg-primary text-primary-foreground p-1 rounded-md">
-                <Shield className="h-5 w-5" />
-              </div>
-              <span className="font-bold text-lg font-serif tracking-tight">TruthLens</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-4">
-              {user ? (
-                <>
-                  <Link to="/profile">
-                    <Button variant="ghost" className="font-medium">{user.username}</Button>
-                  </Link>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </>
-              ) : (
-                <Link to="/login"><Button>Sign In</Button></Link>
-              )}
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="bg-slate-900 text-white p-1.5 rounded-lg">
+              <Shield className="h-5 w-5" />
             </div>
-          </div>
+            <span className="font-bold text-xl font-serif tracking-tight text-slate-900">TruthLens</span>
+          </Link>
+        </div>
+        <div className="flex gap-4 items-center">
+          <Link to="/"><Button variant="ghost">Home</Button></Link>
+          <Link to="/live-feed"><Button variant="ghost">Live Feed</Button></Link>
+          {user ? (
+            <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground">Logout</Button>
+          ) : (
+            <Link to="/login"><Button variant="default">Sign In</Button></Link>
+          )}
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-        <div className="grid lg:grid-cols-12 gap-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 animate-fade-in space-y-12">
 
-          {/* Main Content Column (Left) */}
-          <div className="lg:col-span-8 space-y-8">
+        {/* 1. Header Section */}
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider mx-auto">
+            <span>{article.source_name}</span>
+            <span>•</span>
+            <span>{new Date(article.created_at).toLocaleDateString()}</span>
+          </div>
 
-            {/* Article Header Card */}
-            <div className="bg-background rounded-xl border border-border/60 p-6 sm:p-8 shadow-sm">
-              <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-                <Link to="/" className="hover:text-primary transition-colors flex items-center gap-1">
-                  <ArrowLeft className="h-3 w-3" /> Back
-                </Link>
-                <span>•</span>
-                <span className="uppercase tracking-wider font-semibold text-primary">{article.source_name}</span>
-                <span>•</span>
-                <span>{new Date(article.created_at).toLocaleDateString()}</span>
+          <h1 className="text-4xl sm:text-5xl font-bold font-serif leading-tight text-slate-900">
+            {article.title}
+          </h1>
+
+          <div className="flex justify-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => window.open(article.id.toString(), '_blank')} className="gap-2">
+              <ExternalLink className="h-4 w-4" /> View Source
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowReportModal(true)} className="text-muted-foreground hover:text-rose-600">
+              <Flag className="h-4 w-4 mr-1" /> Report
+            </Button>
+          </div>
+        </div>
+
+        {/* 2. Credibility Visualization (Hero) */}
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center gap-12">
+
+            {/* Left: Score Gauge */}
+            <div className="flex-shrink-0 flex flex-col items-center">
+              <div className="relative h-48 w-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={breakdownData}
+                      cx="50%" cy="50%"
+                      innerRadius={65} outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {breakdownData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#059669', '#3B82F6', '#D97706', '#6366F1'][index % 4]} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className={`text-5xl font-bold font-serif ${getCredibilityColor(article.overall_credibility)}`}>
+                    {Math.round(article.overall_credibility)}
+                  </span>
+                </div>
               </div>
-
-              <h1 className="text-3xl sm:text-4xl font-bold font-serif leading-tight mb-6 text-foreground">
-                {article.title}
-              </h1>
-
-              {/* Status Band */}
-              <div className="flex flex-wrap gap-3 mb-6">
-                <Badge variant="outline" className={`px-3 py-1 text-sm font-medium border ${article.credibility_status === 'Widely Corroborated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                  article.credibility_status === 'High Risk' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                    'bg-amber-50 text-amber-700 border-amber-200'
-                  }`}>
-                  {article.credibility_status}
-                </Badge>
-                {article.is_soft_locked && (
-                  <Badge variant="destructive" className="px-3 py-1 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> Verification In Progress
-                  </Badge>
-                )}
+              <div className={`mt-4 px-4 py-1.5 rounded-full text-sm font-bold border uppercase tracking-wide ${getCredibilityBg(article.overall_credibility)} ${getCredibilityColor(article.overall_credibility)}`}>
+                {article.credibility_status}
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => setShowReportModal(true)}
-                >
-                  <Flag className="h-3.5 w-3.5" />
-                  Report Issue
-                </Button>
-              </div>
+              <p className="text-xs text-muted-foreground mt-3 italic text-center max-w-[200px]">
+                "CrediLens provides insights, not absolute truth."
+              </p>
             </div>
 
-            {/* Soft Lock Banner */}
-            {article.is_soft_locked && article.soft_lock_reason && (
-              <SoftLockBanner reason={article.soft_lock_reason} showDetails={true} />
-            )}
+            {/* Right: Explanation & Signals */}
+            <div className="flex-1 space-y-6">
+              <div>
+                <h3 className="text-xl font-bold font-serif mb-2 text-slate-900">Why this score?</h3>
+                <ScoreExplainer />
+              </div>
 
-            {/* Content Area */}
+              {/* Signal Summary */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col items-center text-center">
+                  <span className="text-3xl font-bold text-emerald-700">{article.factual_sentences?.length || 0}</span>
+                  <span className="text-xs font-semibold text-emerald-900 uppercase mt-1">Factual Signals Detected</span>
+                </div>
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 flex flex-col items-center text-center">
+                  <span className="text-3xl font-bold text-rose-700">{article.hype_sentences?.length || 0}</span>
+                  <span className="text-xs font-semibold text-rose-900 uppercase mt-1">Hype Signals Detected</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Highlighted Article Content */}
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 sm:p-12">
+          <HypeHighlighter
+            content={article.content}
+            hypeSentences={article.hype_sentences}
+            factualSentences={article.factual_sentences}
+          />
+        </section>
+
+        {/* 4. Community Verification */}
+        <section className="bg-slate-50 rounded-2xl border-t border-slate-200 pt-12">
+          <div className="max-w-2xl mx-auto space-y-8">
+            <h3 className="text-2xl font-bold font-serif text-center flex items-center justify-center gap-3">
+              <MessageSquare className="h-6 w-6 text-slate-500" />
+              Community Verification
+            </h3>
+
+            {/* Rate Card */}
             <Card className="border-border/60 shadow-sm">
-              <CardContent className="pt-8 px-8 pb-8">
-                <div className="prose prose-slate max-w-none prose-headings:font-serif prose-p:leading-loose prose-lg">
-                  <HypeHighlighter content={article.content} />
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium">Verify This Story</label>
+                    <span className="text-sm font-bold text-primary">{rating}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={rating}
+                    onChange={(e) => setRating(parseInt(e.target.value))}
+                    className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                    disabled={!user || article.is_soft_locked || article.user_has_rated}
+                  />
+                  {article.user_has_rated ? (
+                    <Button disabled className="w-full">Rated {article.user_credibility_rating}%</Button>
+                  ) : (
+                    <Button onClick={handleRateArticle} disabled={!user || submitting} className="w-full">Submit Rating</Button>
+                  )}
+                  {!user && <Link to="/login" className="text-xs text-center block text-primary hover:underline">Log in to contribute</Link>}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Community Discussion Area (Now prominent) */}
-            <div className="bg-background rounded-xl border border-border/60 shadow-sm overflow-hidden" id="comments">
-              <div className="px-6 py-4 border-b bg-secondary/30 flex items-center justify-between">
-                <h3 className="font-serif text-xl font-bold flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Community Verification
-                </h3>
-              </div>
-              <div className="p-6">
-                <CommentSection articleId={article.id} />
-              </div>
-            </div>
+            <CommentSection articleId={article.id} />
           </div>
+        </section>
 
-          {/* Sticky Sidebar (Right) - "Truth Dashboard" */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="sticky top-24 space-y-6">
-
-              {/* Overall Score Card */}
-              <Card className="border-border/60 shadow-md bg-gradient-to-b from-background to-secondary/20 overflow-hidden">
-                <CardHeader className="bg-primary/5 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-primary font-serif">
-                    <Shield className="h-5 w-5" fill="currentColor" className="text-primary/20" />
-                    TruthLens Score
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 text-center">
-                  <div className="relative inline-flex items-center justify-center mb-4">
-                    {/* Using Recharts Pie as a ring */}
-                    <div className="h-40 w-40 flex items-center justify-center rounded-full border-8 border-secondary relative">
-                      <span className={`text-5xl font-bold ${getCredibilityColor(article.overall_credibility)}`}>
-                        {Math.round(article.overall_credibility)}
-                      </span>
-                      <span className="absolute -bottom-2 text-sm text-muted-foreground font-medium uppercase tracking-widest">Trust</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <ScoreExplainer />
-                  </div>
-
-                  <div className="space-y-4 text-left mt-4">
-                    {breakdownData.map((item) => (
-                      <div key={item.name} className="flex justify-between items-center text-sm">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          {item.name}
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Info className="h-3 w-3 opacity-50 hover:opacity-100 cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent><p className="w-48">{item.help}</p></TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                        <span className="font-mono font-medium">{item.value.toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Fact vs Opinion Bar */}
-                  <div className="mt-6 pt-6 border-t">
-                    <div className="flex justify-between text-xs font-semibold uppercase tracking-wider mb-2">
-                      <span className="text-emerald-700">Fact</span>
-                      <span className="text-amber-700">Opinion</span>
-                    </div>
-                    <div className="h-2.5 bg-secondary rounded-full overflow-hidden flex">
-                      <div
-                        className="bg-emerald-500 h-full"
-                        style={{ width: `${(article.fact_opinion_ratio || 0.5) * 100}%` }}
-                      />
-                      <div
-                        className="bg-amber-400 h-full flex-1"
-                      />
-                    </div>
-                    <p className="text-xs text-center mt-2 text-muted-foreground">
-                      Content appears to be <strong>{Math.round((article.fact_opinion_ratio || 0.5) * 100)}% factual</strong>.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Card: Rate This */}
-              <Card className="border-border/60 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Star className="h-4 w-4 text-accent" />
-                    Verify This Story
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <label className="text-sm font-medium">Your Assessment</label>
-                        <span className="text-sm font-bold text-primary">{rating}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={rating}
-                        onChange={(e) => setRating(parseInt(e.target.value))}
-                        className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                        disabled={!user || article.is_soft_locked}
-                      />
-                      <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                        <span>Fake</span>
-                        <span>Credible</span>
-                      </div>
-                    </div>
-                    <Button
-                      className="w-full bg-primary hover:bg-primary/90"
-                      onClick={handleRateArticle}
-                      disabled={!user || submitting || article.is_soft_locked}
-                    >
-                      Submit Rating
-                    </Button>
-                    {!user && <p className="text-xs text-center text-rose-500">Log in to vote</p>}
-                    {user && user.credibility_score !== undefined && (
-                      <div className="mt-2 flex justify-center">
-                        <VoteImpactIndicator
-                          userCredibility={user.credibility_score}
-                          votedUp={rating >= 60}
-                          votedDown={rating < 40}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Source Card */}
-              <div className="bg-card rounded-lg border p-4 flex items-center gap-3">
-                <div className="h-10 w-10 bg-secondary rounded-full flex items-center justify-center text-lg font-bold font-serif text-primary">
-                  {article.source_name.substring(0, 1)}
-                </div>
-                <div>
-                  <div className="font-bold text-sm">{article.source_name}</div>
-                  <div className="text-xs text-muted-foreground">Reliability: {article.source_trust_score.toFixed(1)}%</div>
-                </div>
-                <Button variant="ghost" size="sm" className="ml-auto h-8 w-8 p-0">
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-
-            </div>
-          </div>
-
+        {/* Footer */}
+        <div className="mt-12 pt-8 border-t border-slate-200 text-center text-slate-500 text-sm">
+          <Footer />
         </div>
+
       </main>
 
       {/* Report Modal */}
@@ -377,8 +307,6 @@ export default function ArticleDetail() {
           onClose={() => setShowReportModal(false)}
         />
       )}
-
-      <Footer />
     </div>
   );
 }

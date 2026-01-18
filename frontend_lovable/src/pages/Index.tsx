@@ -28,6 +28,9 @@ interface Article {
   source_id?: number;
   category?: string;
   ingestion_type?: string;
+  community_score?: number;
+  nlp_score?: number;
+  cross_source_score?: number;
 };
 
 export default function Index() {
@@ -106,6 +109,11 @@ export default function Index() {
             </div>
 
             <div className="hidden md:flex items-center gap-4">
+              <Link to="/live-feed">
+                <Button variant="ghost" className="font-medium text-primary hover:text-primary/80 hover:bg-primary/5">
+                  Live Feed
+                </Button>
+              </Link>
               {user ? (
                 <>
                   <Button
@@ -141,6 +149,10 @@ export default function Index() {
                   </Link>
                 </>
               )}
+            </div>
+
+            <div className="md:hidden flex items-center">
+              <Link to="/live-feed" className="mr-4 text-sm font-medium text-primary">Live Feed</Link>
             </div>
 
             {/* Mobile menu */}
@@ -242,8 +254,8 @@ export default function Index() {
                 key={cat}
                 variant="outline"
                 className={`rounded-full border px-4 h-9 font-medium transition-all ${(cat === 'All' && !articles[0]?.category) || articles.some(a => a.category === cat) // Simple active check logic placeholder
-                    ? 'border-primary/20 bg-primary/5 text-primary'
-                    : 'border-border/50 bg-background/50 hover:bg-background/80 text-muted-foreground'
+                  ? 'border-primary/20 bg-primary/5 text-primary'
+                  : 'border-border/50 bg-background/50 hover:bg-background/80 text-muted-foreground'
                   }`}
                 onClick={() => toast.info(`Filtering by ${cat} coming soon!`)}
               >

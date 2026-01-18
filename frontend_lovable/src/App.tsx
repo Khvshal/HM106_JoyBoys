@@ -11,6 +11,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import HowItWorks from "./pages/HowItWorks";
+import EthicsPolicy from "./pages/EthicsPolicy";
+import LiveFeed from "./pages/LiveFeed";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +31,9 @@ const App = () => (
           <Route path="/source/:id" element={<SourceProfile />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/ethics" element={<EthicsPolicy />} />
+          <Route path="/live-feed" element={<LiveFeed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

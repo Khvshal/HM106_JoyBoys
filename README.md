@@ -108,7 +108,7 @@ yarn dev
 bun dev
 ```
 
-✅ Frontend should be running at: **http://localhost:5173**
+✅ Frontend should be running at: **http://localhost:8080**
 
 ---
 

@@ -5,11 +5,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Flag, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { articlesAPI } from '@/services/api';
+import { articlesAPI, commentsAPI } from '@/services/api';
 
 interface ReportModalProps {
-    articleId: number;
-    articleTitle: string;
+    articleId?: number;
+    commentId?: number;
+    articleTitle?: string;
     onClose: () => void;
 }
 
@@ -20,13 +21,16 @@ const REPORT_REASONS = [
     { value: 'misleading', label: 'Misleading Claims', desc: 'Distorts facts or context' },
     { value: 'unverified', label: 'Unverified Claims', desc: 'Lacks evidence or corroboration' },
     { value: 'biased', label: 'Strong Bias', desc: 'One-sided without balance' },
-    { value: 'spam', label: 'Spam/Low Quality', desc: 'Not genuine news content' }
+    { value: 'spam', label: 'Spam/Low Quality', desc: 'Not genuine news content' },
+    { value: 'harassment', label: 'Harassment/Abuse', desc: 'Targeted attacks or abuse' }
 ];
 
-export function ReportModal({ articleId, articleTitle, onClose }: ReportModalProps) {
+export function ReportModal({ articleId, commentId, articleTitle, onClose }: ReportModalProps) {
     const [selectedReason, setSelectedReason] = useState<string>('');
     const [explanation, setExplanation] = useState('');
     const [submitting, setSubmitting] = useState(false);
+
+    const isComment = !!commentId;
 
     const handleSubmit = async () => {
         if (!selectedReason) {
@@ -36,7 +40,11 @@ export function ReportModal({ articleId, articleTitle, onClose }: ReportModalPro
 
         setSubmitting(true);
         try {
-            await articlesAPI.report(articleId, selectedReason, explanation);
+            if (isComment && commentId) {
+                await commentsAPI.report(commentId, selectedReason, explanation);
+            } else if (articleId) {
+                await articlesAPI.report(articleId, selectedReason, explanation);
+            }
             toast.success('Report submitted successfully', {
                 description: 'An admin will review your report soon.'
             });
@@ -54,7 +62,7 @@ export function ReportModal({ articleId, articleTitle, onClose }: ReportModalPro
                 <CardHeader className="border-b bg-secondary/20 flex flex-row items-center justify-between pb-4">
                     <div className="flex items-center gap-2">
                         <Flag className="h-5 w-5 text-rose-600" />
-                        <CardTitle>Report Article</CardTitle>
+                        <CardTitle>{isComment ? 'Report Comment' : 'Report Article'}</CardTitle>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
                         <X className="h-4 w-4" />
@@ -64,7 +72,9 @@ export function ReportModal({ articleId, articleTitle, onClose }: ReportModalPro
                 <CardContent className="pt-6 space-y-6">
                     <div className="bg-secondary/20 p-4 rounded-lg">
                         <p className="text-sm font-medium mb-1">Reporting:</p>
-                        <p className="text-sm text-muted-foreground italic line-clamp-2">"{articleTitle}"</p>
+                        <p className="text-sm text-muted-foreground italic line-clamp-2">
+                            {isComment ? `Comment #${commentId}` : `"${articleTitle}"`}
+                        </p>
                     </div>
 
                     <div className="space-y-3">
@@ -75,8 +85,8 @@ export function ReportModal({ articleId, articleTitle, onClose }: ReportModalPro
                                     key={reason.value}
                                     onClick={() => setSelectedReason(reason.value)}
                                     className={`w-full text-left p-3 rounded-lg border-2 transition-all ${selectedReason === reason.value
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border hover:border-primary/50 hover:bg-secondary/50'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between mb-1">
@@ -94,7 +104,7 @@ export function ReportModal({ articleId, articleTitle, onClose }: ReportModalPro
                     <div className="space-y-2">
                         <label className="text-sm font-semibold block">Additional Details (Optional)</label>
                         <Textarea
-                            placeholder="Provide any additional context that would help moderators review this article..."
+                            placeholder={`Provide any additional context that would help moderators review this ${isComment ? 'comment' : 'article'}...`}
                             value={explanation}
                             onChange={(e) => setExplanation(e.target.value)}
                             className="min-h-[100px] resize-none"
@@ -124,3 +134,5 @@ export function ReportModal({ articleId, articleTitle, onClose }: ReportModalPro
         </div>
     );
 }
+
+

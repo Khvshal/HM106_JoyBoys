@@ -94,13 +94,45 @@ class ArticleResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ArticleListResponse(ArticleResponse):
+    user_has_rated: bool = False
+    user_credibility_rating: Optional[float] = None
+
+    user_has_rated: bool = False
+    user_credibility_rating: Optional[float] = None
+    
+    @classmethod
+    def validate_json_fields(cls, v):
+        # Allow Pydantic to do its thing, but if we get DB strings, parse them
+        pass
+
+    class Config:
+        from_attributes = True
+
+import json
+from pydantic import validator
+
 class ArticleDetailResponse(ArticleResponse):
     content: str
+    hype_sentences: List[str] = []
+    factual_sentences: List[str] = []
     suspicious_activity_detected: bool
     fact_opinion_ratio: float = 0.5
     ratings_count: int
     comments_count: int
     audit_logs: List[Dict]
+    user_has_rated: bool = False
+    user_credibility_rating: Optional[float] = None
+
+    @validator('hype_sentences', 'factual_sentences', pre=True)
+    def parse_json_list(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except:
+                return []
+        return v if v is not None else []
 
 
 # ==================== Rating/Comment Schemas ====================
@@ -131,6 +163,7 @@ class CommentResponse(BaseModel):
     user: Optional[UserProfile] = None
     upvotes: int = 0
     downvotes: int = 0
+    user_vote: int = 0  # 1, -1, or 0
     
     class Config:
         from_attributes = True
@@ -144,6 +177,21 @@ class ReportCreate(BaseModel):
 class ReportResponse(BaseModel):
     id: int
     article_id: int
+    report_type: str
+    description: str
+    is_resolved: bool
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class CommentReportCreate(BaseModel):
+    report_type: str
+    description: str
+
+class CommentReportResponse(BaseModel):
+    id: int
+    comment_id: int
     report_type: str
     description: str
     is_resolved: bool

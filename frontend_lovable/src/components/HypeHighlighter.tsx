@@ -6,115 +6,106 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface HypeHighlighterProps {
     content: string;
+    hypeSentences?: string[];
+    factualSentences?: string[];
     className?: string;
 }
 
-// Categorized Hype Words
-const HYPE_PATTERNS = [
-    {
-        category: "Sensationalism",
-        words: ["shocking", "amazing", "unbelievable", "mind-blowing", "insane", "bizarre", "miracle"],
-        description: "Emotionally charged language designed to provoke curiosity."
-    },
-    {
-        category: "Urgency",
-        words: ["urgent", "breaking", "exclusive", "now", "immediately", "alert"],
-        description: "Words creating artificial time pressure."
-    },
-    {
-        category: "Exaggeration",
-        words: ["explosive", "destroy", "obliterate", "nightmare", "best", "worst", "never seen before"],
-        description: "Hyperbolic terms that oversell the content."
-    },
-    {
-        category: "Clickbait",
-        words: ["viral", "scandal", "exposed", "secret", "you won't believe", "what happened next"],
-        description: "Phrases typical of click-driven headlines."
-    }
-];
+export function HypeHighlighter({ content, hypeSentences = [], factualSentences = [], className }: HypeHighlighterProps) {
+    const [isEnabled, setIsEnabled] = useState(true);
 
-export function HypeHighlighter({ content, className }: HypeHighlighterProps) {
-    const [isEnabled, setIsEnabled] = useState(false);
+    // Normalize comparison
+    const clean = (s: string) => s.trim().toLowerCase();
 
-    // Flatten words for regex
-    const allHypeWords = HYPE_PATTERNS.flatMap(p => p.words);
+    // Split content into segments (sentences/paragraphs) for rendering
+    // We'll use a simple split by period but try to preserve structure
+    // Actually, to ensure we match the backend's sentences, we might just iterate the text?
+    // Given the difficulty of exact reconstruction, we'll try to split by the same logic or just use string search.
 
-    const getMatchCategory = (word: string) => {
-        return HYPE_PATTERNS.find(p => p.words.some(w => w.toLowerCase() === word.toLowerCase()));
-    };
+    // Better approach: 
+    // 1. We know the sentences we want to highlight.
+    // 2. We can look for them in the text and wrap them.
+    // 3. Since React string replacement is complex, we'll split the content by the known sentences? No, they might be many.
 
-    // Function to highlight text
-    const getHighlightedText = (text: string) => {
-        if (!isEnabled) return text;
-
-        const parts = text.split(new RegExp(`(${allHypeWords.join('|')})`, 'gi'));
-
-        return parts.map((part, i) => {
-            const category = getMatchCategory(part);
-            if (category) {
-                return (
-                    <TooltipProvider key={i} delayDuration={0}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span
-                                    className="bg-yellow-200 text-yellow-900 border-b-2 border-yellow-500 px-1 rounded cursor-help transition-colors hover:bg-yellow-300"
-                                >
-                                    {part}
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-popover text-popover-foreground border-border max-w-xs p-3">
-                                <div className="space-y-1">
-                                    <p className="font-semibold text-sm flex items-center gap-2">
-                                        <Sparkles className="h-3.5 w-3.5 text-yellow-600" />
-                                        {category.category}
-                                    </p>
-                                    <p className="text-xs opacity-90">{category.description}</p>
-                                </div>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                );
-            }
-            return part;
-        });
-    };
+    // Let's try splitting by sentence delimiters first, similar to backend.
+    const splitRegex = /(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s/;
+    const segments = content.split(splitRegex);
 
     return (
-        <div className={cn("relative", className)}>
-            <div className="flex justify-end mb-4">
+        <div className={cn("relative leading-loose", className)}>
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold font-serif">Article Analysis</h3>
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setIsEnabled(!isEnabled)}
-                    className={cn(
-                        "text-xs gap-2 transition-all border-dashed shadow-sm",
-                        isEnabled ? "bg-yellow-50 text-yellow-800 border-yellow-300 hover:bg-yellow-100" : "text-muted-foreground hover:text-foreground"
-                    )}
+                    className="text-xs"
                 >
-                    {isEnabled ? (
-                        <>
-                            <EyeOff className="h-3.5 w-3.5" />
-                            Hide Hype Analysis
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
-                            Detect Hype & Sensationalism
-                        </>
-                    )}
+                    {isEnabled ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+                    {isEnabled ? 'Hide Highlights' : 'Show Highlights'}
                 </Button>
             </div>
 
-            <div className={cn("prose prose-slate max-w-none text-foreground/90 leading-relaxed transition-opacity duration-300", isEnabled ? "opacity-100" : "opacity-95")}>
-                {isEnabled ? (
-                    <div>{getHighlightedText(content)}</div>
-                ) : (
-                    // Render regular content preserving newlines
-                    content.split('\n').map((line, i) => (
-                        <p key={i} className="mb-4 whitespace-pre-wrap">{line}</p>
-                    ))
-                )}
+            <div className={cn("prose prose-lg max-w-none text-foreground/90 transition-all duration-500", !isEnabled && "opacity-100")}>
+                {segments.map((segment, i) => {
+                    const isHype = isEnabled && hypeSentences.some(h => clean(h) === clean(segment));
+                    const isFact = isEnabled && factualSentences.some(f => clean(f) === clean(segment));
+
+                    if (isHype) {
+                        return (
+                            <TooltipProvider key={i}>
+                                <Tooltip delayDuration={300}>
+                                    <TooltipTrigger asChild>
+                                        <span className="bg-rose-50 text-rose-900 px-1 py-0.5 rounded mx-0.5 box-decoration-clone cursor-help border-b-2 border-rose-100 transition-colors hover:bg-rose-100">
+                                            {segment}{' '}
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-rose-50 border-rose-100 text-rose-800">
+                                        <div className="flex items-center gap-2">
+                                            <Sparkles className="h-4 w-4" />
+                                            <span>Sensationalist / Subjective Language</span>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        );
+                    }
+                    if (isFact) {
+                        return (
+                            <TooltipProvider key={i}>
+                                <Tooltip delayDuration={300}>
+                                    <TooltipTrigger asChild>
+                                        <span className="bg-emerald-50 text-emerald-900 px-1 py-0.5 rounded mx-0.5 box-decoration-clone cursor-help border-b-2 border-emerald-100 transition-colors hover:bg-emerald-100">
+                                            {segment}{' '}
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-emerald-50 border-emerald-100 text-emerald-800">
+                                        <div className="flex items-center gap-2">
+                                            <Info className="h-4 w-4" />
+                                            <span>Factual Statement / Data</span>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        );
+                    }
+                    return <span key={i}>{segment} </span>;
+                })}
             </div>
+
+            {/* Legend */}
+            {isEnabled && (
+                <div className="mt-8 pt-4 border-t flex gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        <span className="text-muted-foreground">Factual / Data-driven</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-rose-500"></span>
+                        <span className="text-muted-foreground">High Hype / Editorialized</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

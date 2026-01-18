@@ -59,6 +59,11 @@ class CredibilityEngine:
         
         # Determine status
         status = self._determine_status(overall_score, article)
+
+        # Extract Signals for Highlighting (Feature 1)
+        signals = self._extract_signals(article.content)
+        article.hype_sentences = json.dumps(signals['hype_sentences'])
+        article.factual_sentences = json.dumps(signals['factual_sentences'])
         
         # Check for manipulation
         is_suspicious = self._detect_manipulation(article, db)
@@ -74,6 +79,40 @@ class CredibilityEngine:
             self._extract_claims(article, db)
         
         return overall_score, status, is_suspicious
+        return overall_score, status, is_suspicious
+
+    def _extract_signals(self, text: str) -> Dict[str, List[str]]:
+        """Extract sentences for highlighting"""
+        import re
+        # Rudimentary sentence splitting
+        sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', text)
+        
+        hype = []
+        factual = []
+        
+        hype_keywords = [
+            "shocking", "bombshell", "destroyed", "eviscerated", "you won't believe", 
+            "miracle", "secret", "exposed", "shameful", "betrayal", "crisis", 
+            "catastrophe", "urgent", "breaking", "nightmare"
+        ]
+        
+        factual_keywords = [
+            "according to", "reported by", "study shows", "data indicates", 
+            "percent", "%", "evidence", "confirmed", "official", "stated",
+            "researchers", "statistics"
+        ]
+        
+        for sent in sentences:
+            s_lower = sent.lower()
+            
+            # Hype priority
+            if any(k in s_lower for k in hype_keywords) or "!!!" in sent:
+                hype.append(sent)
+            # Factual
+            elif any(k in s_lower for k in factual_keywords) or re.search(r'\d+', sent):
+                factual.append(sent)
+                
+        return {"hype_sentences": hype, "factual_sentences": factual}
     
     def _compute_source_trust(self, article: Article, db: Session) -> float:
         """

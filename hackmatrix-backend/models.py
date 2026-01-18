@@ -105,6 +105,8 @@ class Article(Base):
     
     # NLP Analysis details
     fact_opinion_ratio = Column(Float, default=0.5)  # 0.0 (opinion) to 1.0 (fact)
+    hype_sentences = Column(Text, default="[]")  # JSON list
+    factual_sentences = Column(Text, default="[]")  # JSON list
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -253,3 +255,24 @@ class Claim(Base):
     
     # Relationships
     article = relationship("Article", back_populates="claims")
+
+
+class CommentReport(Base):
+    __tablename__ = "comment_reports"
+    
+    id = Column(Integer, primary_key=True)
+    comment_id = Column(Integer, ForeignKey('comments.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    
+    # Report details
+    report_type = Column(String(100), nullable=False)
+    description = Column(Text, nullable=False)
+    
+    is_resolved = Column(Boolean, default=False)
+    resolution = Column(String(255), nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    comment = relationship("Comment")
+    user = relationship("User")

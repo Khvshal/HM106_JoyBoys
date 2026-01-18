@@ -1,0 +1,28 @@
+services:
+  # Backend FastAPI Service
+  - type: web
+    name: hackmatrix-backend
+    runtime: python
+    rootDir: hackmatrix-backend
+    buildCommand: "pip install -r requirements.txt && python nltk_setup.py"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:////opt/render/project/data/hackmatrix.db
+    disk:
+      name: hackmatrix-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1
+
+  # Frontend Static Site
+  - type: web
+    name: hackmatrix-frontend
+    runtime: static
+    rootDir: frontend_lovable
+    buildCommand: "npm install && npm run build"
+    staticPublishDir: dist
+    plan: free
+    envVars:
+      - key: VITE_API_URL
+        sync: false # User will need to update this after backend is deployed

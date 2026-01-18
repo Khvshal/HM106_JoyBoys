@@ -5,6 +5,8 @@ import os
 from database import engine, SessionLocal
 from models import Base, User
 import bcrypt
+import nltk_setup
+
 
 load_dotenv()
 
@@ -71,7 +73,7 @@ origins = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:8081",
-    os.getenv("FRONTEND_URL", "http://localhost:8081")
+    os.getenv("FRONTEND_URL", "https://hackmatrix-frontend.onrender.com")
 ]
 
 app.add_middleware(

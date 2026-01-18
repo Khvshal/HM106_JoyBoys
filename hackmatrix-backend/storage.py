@@ -1,0 +1,4 @@
+ARTICLES = []
+SOURCES = {}
+COMMENTS = []
+USERS = []

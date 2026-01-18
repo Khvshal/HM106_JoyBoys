@@ -8,8 +8,8 @@ services:
     startCommand: "gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT"
     plan: free
     envVars:
-      - key: DATABASE_URL
-        value: sqlite:////opt/render/project/data/hackmatrix.db
+      - key: IS_PRODUCTION # Dummy var to keep envVars block if needed, or just remove
+        value: "true"
     disk:
       name: hackmatrix-data
       mountPath: /opt/render/project/data
